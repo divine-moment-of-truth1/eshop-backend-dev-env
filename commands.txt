@@ -1,0 +1,16 @@
+Run backend server:-
+cd backend
+npm start
+
+# Ensure MongoDB is up
+
+# Get ip address
+https://www.whatismyip.com/
+
+
+# Copy ip and add to mongoDB:-
+https://account.mongodb.com/account/login?n=%2Fv2%2F610432fb811566202c4eda6e&nextHash=%23clusters
+https://cloud.mongodb.com/v2/610432fb811566202c4eda6e#security/network/accessList
+
+# Delete old ip then add new ip
+

@@ -4,7 +4,9 @@ const router = express.Router();
 
 // Get categories
 router.get(`/`, async (req, res) => {
-    const categoryList = await Category.find();
+    const categoryList = await Category.find().catch(err => {
+        return res.status(500).json({ success: false, error: err })
+    });
 
     if(!categoryList) {
         res.status(500).json({

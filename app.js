@@ -90,6 +90,7 @@ mongoose.connect(process.env.CONNECTION_STRING, {
     dbName: process.env.DB_NAME
 })
 .then(() => {
+    console.log('We are using ' + process.env.DB_NAME);
     console.log('Database connection is ready');
 })
 .catch((err)=> {

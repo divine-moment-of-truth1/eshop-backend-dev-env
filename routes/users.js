@@ -9,7 +9,9 @@ const jwt = require('jsonwebtoken');
 router.get('/', async (req, res) => {
     // const userList = await User.find().select('name phone email'); 
 
-    const userList = await User.find(); 
+    const userList = await User.find().catch(err => {
+        return res.status(500).json({ success: false, error: err })
+    }); 
 
     if(!userList)
         return res.status(500).json({ success: false });

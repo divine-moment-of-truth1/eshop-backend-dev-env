@@ -9,7 +9,10 @@ const stripe = require('stripe')('sk_test_51JiFcVB3A3vPzVfarsBcKfQfLRMm6eicdgWmb
 router.get(`/`, async (req, res) =>{
 
     // add user detail property to returned order - 'name'. Also, sort by date - newset to oldest
-    const orderList = await Order.find().populate('user', 'name').sort({'dateOfOrder': -1});  
+    const orderList = await Order.find().populate('user', 'name').sort({'dateOfOrder': -1}).catch(err => {
+        return res.status(500).json({ success: false, error: err })
+    });
+
     if(!orderList) {
         res.status(500).json({success: false})
     } 

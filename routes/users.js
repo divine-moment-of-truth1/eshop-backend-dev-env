@@ -33,7 +33,6 @@ router.get('/:id', async (req, res) => {
 
 // Post - create (register) a new user
 router.post('/register', async (req, res) => {
-    console.log(req.body.password);
     let user = new User({
         name: req.body.name,
         email: req.body.email,

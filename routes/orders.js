@@ -91,9 +91,9 @@ router.post('/create-checkout-session', async (req, res) => {
         return res.status(400).send('Checkout session can not be created - Check the order items');
     }
 
-    const lineItems = Promise.all(
+    const lineItems = await Promise.all(
         orderItems.map(async (orderItem) => {
-            const product = await Product.findById(orderItem.product);
+            const product = await Product.findById(orderItem.product.id);
             return {
                 price_data: {
                     currency: 'usd',
@@ -141,7 +141,6 @@ router.delete('/:id', (req, res) => {
     Order.findByIdAndRemove(req.params.id).then(async order => {
         if(order) {
             await order.orderItems.map(async orderItem => {
-                console.log(orderItem);
                 await OrderItem.findByIdAndRemove(orderItem);
             }) 
             

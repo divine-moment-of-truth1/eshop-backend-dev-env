@@ -129,13 +129,38 @@ const uploadOptions = multer({ storage: storage });
  *              description: Failed to get products from server
  */
 router.get(`/`, async (req, res) => {
+    console.log("HELLO FROM MONGODB");
+    console.log(req.query.sort)
+
     let filter = {};
+    let sort = {};
 
     if(req.query.categories) {
         filter = { category: req.query.categories.split(',') };
+    } else if (req.query.searchText) {
+        filter = {"name":{ '$regex': req.query.searchText, $options:  "$i"}}
+    } 
+
+    // Work out which column to sort by.
+    if (req.query.sort === "name") {
+        sort = { "name": 1 };
+    } else if (req.query.sort === "priceAsc") {
+        sort = { "price": 1 };
+    } else if (req.query.sort === "priceDesc") {
+        sort = { "price": -1 };
+    } else if (req.query.sort === "rating") {
+        sort = { "rating": -1 };
     }
 
-    const productList = await Product.find(filter).populate('category');
+    const productList = await Product.find(filter)
+        .populate('category')
+        .sort(sort)
+        .skip(0)
+        // .limit(9);
+
+
+
+    // const productList = await Product.find(filter).populate('category');
 
     // Return only the product name and image and exclude '_id'
     // const productList = await Product.find().select('name image -_id');

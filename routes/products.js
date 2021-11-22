@@ -131,9 +131,22 @@ const uploadOptions = multer({ storage: storage });
 router.get(`/`, async (req, res) => {
     console.log("HELLO FROM MONGODB");
     console.log(req.query.sort)
+    console.log(req.query.pageIndex[0])
+    console.log(req.query.pageIndex[1])
 
     let filter = {};
     let sort = {};
+    const pageNumber = parseInt(req.query.pageIndex[0]) + 1;
+    const pageSize = parseInt(req.query.pageIndex[1]);
+    let numToSkip = 0;
+    console.log("Page number :- " + pageNumber)
+    
+    if (pageNumber == 1) {
+        numToSkip = 0;
+    } else {
+        numToSkip = (pageNumber * pageSize) - pageSize + 1;
+    }    
+    console.log("Number to skip:- " + numToSkip)
 
     if(req.query.categories) {
         filter = { category: req.query.categories.split(',') };
@@ -152,13 +165,31 @@ router.get(`/`, async (req, res) => {
         sort = { "rating": -1 };
     }
 
+    const productCount = await Product.find(filter).countDocuments((count) => count);
+    console.log("Product count:- " + productCount);
+    const count = {
+        count: productCount
+    }
+
     const productList = await Product.find(filter)
         .populate('category')
         .sort(sort)
-        .skip(0)
-        // .limit(9);
+        .skip(numToSkip)
+        .limit(pageSize);
+    // console.log("Products:- " + productList)
 
+    const products = {
+        products: productList
+    }
+    // console.log("Products:- " + products)
+    // console.log("Count:- " + count)
 
+    paginationData = Object.assign({}, count, products)
+    // console.log("PaginationData:- " + paginationData)
+
+    // pageIndex: number;
+    // pageSize: number;
+    // count: number;
 
     // const productList = await Product.find(filter).populate('category');
 
@@ -168,7 +199,8 @@ router.get(`/`, async (req, res) => {
     if(!productList) {
         res.status(500).json({ success: false })
     }
-    res.send(productList);
+    // res.send(productList);
+    res.send(paginationData);
 })
 
 

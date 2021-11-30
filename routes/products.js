@@ -128,25 +128,19 @@ const uploadOptions = multer({ storage: storage });
  *          '500':
  *              description: Failed to get products from server
  */
-router.get(`/`, async (req, res) => {
-    console.log("HELLO FROM MONGODB");
-    console.log(req.query.sort)
-    console.log(req.query.pageIndex[0])
-    console.log(req.query.pageIndex[1])
+ router.get(`/`, async (req, res) => {
 
     let filter = {};
     let sort = {};
     const pageNumber = parseInt(req.query.pageIndex[0]) + 1;
     const pageSize = parseInt(req.query.pageIndex[1]);
     let numToSkip = 0;
-    console.log("Page number :- " + pageNumber)
     
     if (pageNumber == 1) {
         numToSkip = 0;
     } else {
         numToSkip = (pageNumber * pageSize) - pageSize + 1;
     }    
-    console.log("Number to skip:- " + numToSkip)
 
     if(req.query.categories) {
         filter = { category: req.query.categories.split(',') };
@@ -165,41 +159,28 @@ router.get(`/`, async (req, res) => {
         sort = { "rating": -1 };
     }
 
-    const productCount = await Product.find(filter).countDocuments((count) => count);
-    console.log("Product count:- " + productCount);
-    const count = {
-        count: productCount
-    }
+    try {
+        const productCount = await Product.find(filter).countDocuments((count) => count);
+        const count = {
+            count: productCount
+        }
 
-    const productList = await Product.find(filter)
+        const productList = await Product.find(filter)
         .populate('category')
         .sort(sort)
         .skip(numToSkip)
         .limit(pageSize);
-    // console.log("Products:- " + productList)
 
-    const products = {
-        products: productList
-    }
-    // console.log("Products:- " + products)
-    // console.log("Count:- " + count)
+        const products = {
+            products: productList
+        }
 
-    paginationData = Object.assign({}, count, products)
-    // console.log("PaginationData:- " + paginationData)
+        paginationData = Object.assign({}, count, products);
 
-    // pageIndex: number;
-    // pageSize: number;
-    // count: number;
-
-    // const productList = await Product.find(filter).populate('category');
-
-    // Return only the product name and image and exclude '_id'
-    // const productList = await Product.find().select('name image -_id');
-
-    if(!productList) {
+    } catch {
         res.status(500).json({ success: false })
     }
-    // res.send(productList);
+    
     res.send(paginationData);
 })
 

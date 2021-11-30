@@ -18,3 +18,14 @@ https://cloud.mongodb.com/v2/610432fb811566202c4eda6e#security/network/accessLis
 Heroku Backend Installation:-
 https://cli-auth.heroku.com/auth/cli/browser/6fc41f12-bb2d-41a8-9664-e8eaf35d2bc4?requestor=SFMyNTY.g2gDbQAAAAw4OS4zNS4zMC4xODBuBgBY2ebhfAFiAAFRgA.KHco27aJuYK2Aiyp47SEG-ZRKvnmnty3g4EzazoZktk
 heroku git:remote -a eshop-backend-101
+then login via browser
+git add .
+git commit -m "Added new func"
+git push heroku master
+
+If you get an 'unrelated-histories' error do this:-
+git pull heroku master --allow-unrelated-histories
+git merge heroku origin/master
+... add and commit here...
+git push heroku master
+

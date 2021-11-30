@@ -113,11 +113,13 @@ router.post('/login', async (req, res) => {
                 expiresIn: '1d'     // 1 day
             }
         )
-        res.status(200).send({ user: user.email, token: token });
+        console.log("Successfully logged in:- " + user)
+        return res.status(200).send({ user: user.email, token: token });
     } else {
-        res.status(400).send('Password is incorrect');
+        return res.status(400).send('Password is incorrect');
     }
-    return res.status(200).send(user);
+    // console.log("Successfully logged in:- " + user.country)
+    // return res.status(200).send(user);
 })
 
 

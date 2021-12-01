@@ -130,6 +130,12 @@ const uploadOptions = multer({ storage: storage });
  */
  router.get(`/`, async (req, res) => {
 
+     console.log(req.query.categories)
+     console.log(req.query.sort)
+     console.log(req.query.pageIndex[0])
+     console.log(req.query.pageIndex[1])
+
+
     let filter = {};
     let sort = {};
     const pageNumber = parseInt(req.query.pageIndex[0]) + 1;
@@ -166,10 +172,10 @@ const uploadOptions = multer({ storage: storage });
         }
 
         const productList = await Product.find(filter)
-        .populate('category')
-        .sort(sort)
-        .skip(numToSkip)
-        .limit(pageSize);
+            .populate('category')
+            .sort(sort)
+            .skip(numToSkip)
+            .limit(pageSize);
 
         const products = {
             products: productList
@@ -184,6 +190,17 @@ const uploadOptions = multer({ storage: storage });
     res.send(paginationData);
 })
 
+
+router.get(`/productsAdmin`, async (req, res) => {
+   try {
+       const productList = await Product.find().populate('category');
+
+       res.send(productList);
+
+   } catch {
+       res.status(500).json({ success: false })
+   }
+})
 
 /**
  * @swagger

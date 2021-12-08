@@ -266,29 +266,48 @@ router.post('/', uploadOptions.single('image'), async (req, res) => {
     if(!file) return res.status(400).send('No image file in the request!') 
 
     const fileName = req.file.filename;
-    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
 
-    let product = new Product({
-        name: req.body.name,
-        description: req.body.description,
-        richDescription: req.body.richDescription,
-        image: `${basePath}${fileName}`,
-        brand: req.body.brand,
-        price: req.body.price,
-        category: req.body.category,
-        countInStock: req.body.countInStock,
-        rating: req.body.rating,
-        numReviews: req.body.numReviews,
-        isFeatured: req.body.isFeatured,
-     })
+    const basePath = `${req.protocol}://${req.get('host')}`;
 
-    product = await product.save();
-
-    if(!product)
-    return res.status(500).send('The product can not be created');
-
-    res.send(product);
+    getImagepath(basePath, fileName)
+        .then((imagePath) => {
+            console.log("IMAGE PATH:- " + imagePath)
+            let product = new Product({
+                name: req.body.name,
+                description: req.body.description,
+                richDescription: req.body.richDescription,
+                image: imagePath,
+                brand: req.body.brand,
+                price: req.body.price,
+                category: req.body.category,
+                countInStock: req.body.countInStock,
+                rating: req.body.rating,
+                numReviews: req.body.numReviews,
+                isFeatured: req.body.isFeatured,
+            })
+         
+            try {
+                const newProduct = product.save();
+                res.send(newProduct);  
+            } catch {
+                return res.status(500).send('The product can not be created');
+            }
+        })
 })
+
+function getImagepath(basePath, filename) {
+    return new Promise((resolve, reject) => {
+        // setTimeout(10000, () => {
+            if(basePath === "http://localhost:3000") {
+                console.log(`${basePath}/public/uploads/${filename}`)
+                return resolve(`${basePath}/public/uploads/${filename}`);
+            } else {
+                console.log(`${process.env.IMAGE_LOCATION}${filename}`)
+                return resolve(`${process.env.IMAGE_LOCATION}${filename}`)
+            }
+        // });
+    });
+}
 
 
 /**
@@ -321,36 +340,41 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     let imagepath;
     if(file) {
         const fileName = file.filename;
-        const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
-        imagepath = `${basePath}${fileName}`;
-    } else {
-        imagepath = product.image;
-    }
+        // const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+        // For production
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-        req.params.id,
-        {
-            name: req.body.name,
-            description: req.body.description,
-            richDescription: req.body.richDescription,
-            image: imagepath,
-            brand: req.body.brand,
-            price: req.body.price,
-            category: req.body.category,
-            countInStock: req.body.countInStock,
-            rating: req.body.rating,
-            numReviews: req.body.numReviews,
-            isFeatured: req.body.isFeatured,
-        },
-        {
-            new: true
+        const basePath = `${req.protocol}://${req.get('host')}`;
+
+        getImagepath(basePath, fileName)
+            .then((imagePath) => {
+                try {
+                    const updatedProduct = await Product.findByIdAndUpdate(
+                        req.params.id,
+                        {
+                            name: req.body.name,
+                            description: req.body.description,
+                            richDescription: req.body.richDescription,
+                            image: imagePath,
+                            brand: req.body.brand,
+                            price: req.body.price,
+                            category: req.body.category,
+                            countInStock: req.body.countInStock,
+                            rating: req.body.rating,
+                            numReviews: req.body.numReviews,
+                            isFeatured: req.body.isFeatured,
+                        },
+                        {
+                            new: true
+                        }
+                    )
+
+                    res.send(updatedProduct);
+
+                } catch {
+                    return res.status(500).send('The product can not be updated!');
+                }
+            })
         }
-    )
-
-    if(!updatedProduct)
-    return res.status(500).send('The product can not be updated!');
-
-    res.send(updatedProduct);
 })
 
 
@@ -457,7 +481,13 @@ router.put('/gallery-images/:id', uploadOptions.array('images', 10), async (req,
 
     const files = req.files;
     let imagePaths = [];
-    const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+
+    const basePath = "";
+    if (req.get('host') === "localhost:3000") {
+        const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`; 
+    } else {
+        const basePath = process.env.IMAGE_LOCATION;
+    }
 
     if(files) {
         files.map(file => {

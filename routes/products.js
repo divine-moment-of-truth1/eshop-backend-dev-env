@@ -348,7 +348,7 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
         getImagepath(basePath, fileName)
             .then((imagePath) => {
                 try {
-                    const updatedProduct = await Product.findByIdAndUpdate(
+                    const updatedProduct = Product.findByIdAndUpdate(
                         req.params.id,
                         {
                             name: req.body.name,

@@ -4,54 +4,12 @@ const {Category} = require('../models/category');
 const router = express.Router();
 const mongood = require('mongoose');
 const multer = require('multer');
-AWS = require('aws-sdk'),
-multerS3 = require('multer-s3');
-
-const s3Config = new AWS.S3({
-    accessKeyId: process.env.AWS_IAM_USER_KEY,
-    secretAccessKey: process.env.AWS_IAM_USER_SECRET,
-    Bucket: process.env.AWS_BUCKET_NAME,
-    region: process.env.AWS_REGION
-});
-
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-        cb(null, true)
-    } else {
-        cb(null, false)
-    }
-}
-
-// var s3 = new aws.S3();
 
 const FILE_TYPE_MAP = {
     'image/png': 'png',
     'image/jpeg': 'jpeg',
     'image/jpg': 'jpg',
 }
-
-// awsImagePath = process.env.IMAGE_LOCATION;
-awsImagePath = "https://s3.eu-west-1.amazonaws.com/shop.automation101/public/uploads"
-
-const multerS3Config = multerS3({
-    s3: s3Config,
-    bucket: process.env.AWS_BUCKET_NAME,
-    metadata: function (req, file, cb) {
-        cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-        console.log(file)
-        cb(null, new Date().toISOString() + '-' + file.originalname)
-    }
-});
-
-const uploadToAWS = multer({
-    storage: multerS3Config,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 1024 * 1024 * 5 // we are allowing only 5 MB files
-    }
-})
 
 
 const storage = multer.diskStorage({
@@ -63,13 +21,10 @@ const storage = multer.diskStorage({
             uploadError = null
         }
 
-        // cb(uploadError, 'public/uploads');
-        cb(uploadError, awsImagePath);
+        cb(uploadError, 'public/uploads');
     },
     filename: function (req, file, cb) {
-        console.log("FILE:- " + JSON.stringify(file))
         const filename = file.originalname.split(' ').join('-');
-        console.log("FILENAME:- " + filename)
         const extension = FILE_TYPE_MAP[file.mimetype];
         cb(null, `${filename}-${Date.now()}.${extension}`);
     }
@@ -302,8 +257,7 @@ router.get(`/:id`, async (req, res) => {
  *              description: The product can not be created
  */
 // Post - Create new product in DB
-// router.post('/', uploadOptions.single('image'), async (req, res) => {
-router.post('/', uploadToAWS.single('image'), async (req, res) => {
+router.post('/', uploadOptions.single('image'), async (req, res) => {
     const category = await Category.findById(req.body.category);
     if(!category) return res.status(400).send('Invalid Category!')
 
@@ -311,72 +265,35 @@ router.post('/', uploadToAWS.single('image'), async (req, res) => {
     const file = req.file;
     if(!file) return res.status(400).send('No image file in the request!') 
 
-    // const fileName = req.file.filename;
-    // const basePath = process.env.IMAGE_LOCATION;
-    const imagePath = req.file.location;
+    const fileName = req.file.filename;
 
-    let product = new Product({
-        name: req.body.name,
-        description: req.body.description,
-        richDescription: req.body.richDescription,
-        // image: `${basePath}${fileName}`,
-        image: imagePath,
-        brand: req.body.brand,
-        price: req.body.price,
-        category: req.body.category,
-        countInStock: req.body.countInStock,
-        rating: req.body.rating,
-        numReviews: req.body.numReviews,
-        isFeatured: req.body.isFeatured,
-    })
-    
-    try {
-        const newProduct = await product.save();
-        res.send(newProduct);  
-    } catch {
-        return res.status(500).send('The product can not be created');
-    }
-})
+    const basePath = `${req.protocol}://${req.get('host')}`;
 
-
-// Post - Create new product in DB
-// router.post('/', uploadOptions.single('image'), async (req, res) => {
-//     const category = await Category.findById(req.body.category);
-//     if(!category) return res.status(400).send('Invalid Category!')
-
-//     // Check if there is an image file
-//     const file = req.file;
-//     if(!file) return res.status(400).send('No image file in the request!') 
-
-//     const fileName = req.file.filename;
-
-//     const basePath = `${req.protocol}://${req.get('host')}`;
-
-//     getImagepath(basePath, fileName)
-//         .then((imagePath) => {
-//             console.log("IMAGE PATH:- " + imagePath)
-//             let product = new Product({
-//                 name: req.body.name,
-//                 description: req.body.description,
-//                 richDescription: req.body.richDescription,
-//                 image: imagePath,
-//                 brand: req.body.brand,
-//                 price: req.body.price,
-//                 category: req.body.category,
-//                 countInStock: req.body.countInStock,
-//                 rating: req.body.rating,
-//                 numReviews: req.body.numReviews,
-//                 isFeatured: req.body.isFeatured,
-//             })
+    getImagepath(basePath, fileName)
+        .then((imagePath) => {
+            console.log("IMAGE PATH:- " + imagePath)
+            let product = new Product({
+                name: req.body.name,
+                description: req.body.description,
+                richDescription: req.body.richDescription,
+                image: imagePath,
+                brand: req.body.brand,
+                price: req.body.price,
+                category: req.body.category,
+                countInStock: req.body.countInStock,
+                rating: req.body.rating,
+                numReviews: req.body.numReviews,
+                isFeatured: req.body.isFeatured,
+            })
          
-//             try {
-//                 const newProduct = product.save();
-//                 res.send(newProduct);  
-//             } catch {
-//                 return res.status(500).send('The product can not be created');
-//             }
-//         })
-// })
+            try {
+                const newProduct = product.save();
+                res.send(newProduct);  
+            } catch {
+                return res.status(500).send('The product can not be created');
+            }
+        })
+})
 
 function getImagepath(basePath, filename) {
     return new Promise((resolve, reject) => {
@@ -423,35 +340,41 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     let imagepath;
     if(file) {
         const fileName = file.filename;
-        const basePath = process.env.API_URL;
-        imagepath = `${basePath}${fileName}`;
-        
-        try {
-            const updatedProduct = await Product.findByIdAndUpdate(
-                req.params.id,
-                {
-                    name: req.body.name,
-                    description: req.body.description,
-                    richDescription: req.body.richDescription,
-                    image: imagePath,
-                    brand: req.body.brand,
-                    price: req.body.price,
-                    category: req.body.category,
-                    countInStock: req.body.countInStock,
-                    rating: req.body.rating,
-                    numReviews: req.body.numReviews,
-                    isFeatured: req.body.isFeatured,
-                },
-                {
-                    new: true
-                }
-            )
-            res.send(updatedProduct);
+        // const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`;
+        // For production
 
-            } catch {
-                return res.status(500).send('The product can not be updated!');
-            }
-    }
+        const basePath = `${req.protocol}://${req.get('host')}`;
+
+        getImagepath(basePath, fileName)
+            .then((imagePath) => {
+                try {
+                    const updatedProduct = Product.findByIdAndUpdate(
+                        req.params.id,
+                        {
+                            name: req.body.name,
+                            description: req.body.description,
+                            richDescription: req.body.richDescription,
+                            image: imagePath,
+                            brand: req.body.brand,
+                            price: req.body.price,
+                            category: req.body.category,
+                            countInStock: req.body.countInStock,
+                            rating: req.body.rating,
+                            numReviews: req.body.numReviews,
+                            isFeatured: req.body.isFeatured,
+                        },
+                        {
+                            new: true
+                        }
+                    )
+
+                    res.send(updatedProduct);
+
+                } catch {
+                    return res.status(500).send('The product can not be updated!');
+                }
+            })
+        }
 })
 
 
@@ -559,7 +482,12 @@ router.put('/gallery-images/:id', uploadOptions.array('images', 10), async (req,
     const files = req.files;
     let imagePaths = [];
 
-    const basePath = process.env.IMAGE_LOCATION;
+    const basePath = "";
+    if (req.get('host') === "localhost:3000") {
+        const basePath = `${req.protocol}://${req.get('host')}/public/uploads/`; 
+    } else {
+        const basePath = process.env.IMAGE_LOCATION;
+    }
 
     if(files) {
         files.map(file => {

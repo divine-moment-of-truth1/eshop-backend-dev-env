@@ -15,23 +15,19 @@ const s3Config = new AWS.S3({
 });
 
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
         cb(null, true)
     } else {
         cb(null, false)
     }
 }
-
-// var s3 = new aws.S3();
+console.log("FILE FILTER:- " + fileFilter);
 
 const FILE_TYPE_MAP = {
     'image/png': 'png',
     'image/jpeg': 'jpeg',
     'image/jpg': 'jpg',
 }
-
-// awsImagePath = process.env.IMAGE_LOCATION;
-awsImagePath = "https://s3.eu-west-1.amazonaws.com/shop.automation101/public/uploads"
 
 const multerS3Config = multerS3({
     s3: s3Config,
@@ -40,8 +36,10 @@ const multerS3Config = multerS3({
         cb(null, { fieldName: file.fieldname });
     },
     key: function (req, file, cb) {
-        console.log(file)
-        cb(null, new Date().toISOString() + '-' + file.originalname)
+        console.log("Image storage area:- " + JSON.stringify(file))
+        const filename = file.originalname.split(' ').join('-');
+        const extension = FILE_TYPE_MAP[file.mimetype];
+        cb(null, `${filename}-${Date.now()}.${extension}`);
     }
 });
 
@@ -52,30 +50,6 @@ const uploadToAWS = multer({
         fileSize: 1024 * 1024 * 5 // we are allowing only 5 MB files
     }
 })
-
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const isValid = FILE_TYPE_MAP[file.mimetype];
-        let uploadError = new Error('Invalid image type');
-
-        if(isValid) {
-            uploadError = null
-        }
-
-        // cb(uploadError, 'public/uploads');
-        cb(uploadError, awsImagePath);
-    },
-    filename: function (req, file, cb) {
-        console.log("FILE:- " + JSON.stringify(file))
-        const filename = file.originalname.split(' ').join('-');
-        console.log("FILENAME:- " + filename)
-        const extension = FILE_TYPE_MAP[file.mimetype];
-        cb(null, `${filename}-${Date.now()}.${extension}`);
-    }
-})
-
-const uploadOptions = multer({ storage: storage });
 
 
 /**
@@ -302,7 +276,6 @@ router.get(`/:id`, async (req, res) => {
  *              description: The product can not be created
  */
 // Post - Create new product in DB
-// router.post('/', uploadOptions.single('image'), async (req, res) => {
 router.post('/', uploadToAWS.single('image'), async (req, res) => {
     const category = await Category.findById(req.body.category);
     if(!category) return res.status(400).send('Invalid Category!')
@@ -311,15 +284,13 @@ router.post('/', uploadToAWS.single('image'), async (req, res) => {
     const file = req.file;
     if(!file) return res.status(400).send('No image file in the request!') 
 
-    // const fileName = req.file.filename;
-    // const basePath = process.env.IMAGE_LOCATION;
     const imagePath = req.file.location;
+    console.log("Image Path:- " + imagePath)
 
     let product = new Product({
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        // image: `${basePath}${fileName}`,
         image: imagePath,
         brand: req.body.brand,
         price: req.body.price,
@@ -405,7 +376,8 @@ function getImagepath(basePath, filename) {
  *              description: The product can not be updated!
  */
 // Put - Update a product in DB 
-router.put('/:id', uploadOptions.single('image'), async (req, res) => {
+router.put('/:id', uploadToAWS.single('image'), async (req, res) => {
+    console.log("HELLO from PUT");
     // test that product ID is valid
     if(!mongood.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid product ID!');
@@ -422,9 +394,11 @@ router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     const file = req.file;
     let imagepath;
     if(file) {
-        const fileName = file.filename;
-        const basePath = process.env.API_URL;
-        imagepath = `${basePath}${fileName}`;
+        // const fileName = file.filename;
+        // const basePath = process.env.API_URL;
+        // imagepath = `${basePath}${fileName}`;
+        const imagePath = req.file.location;
+        console.log("Image Path:- " + imagePath)
         
         try {
             const updatedProduct = await Product.findByIdAndUpdate(
@@ -550,7 +524,7 @@ router.get(`/get/count`, async (req, res) => {
  *              description: The products image can not be updated!
  */
 // Used only for updating the products images
-router.put('/gallery-images/:id', uploadOptions.array('images', 10), async (req, res) => {
+router.put('/gallery-images/:id', uploadToAWS.array('images', 10), async (req, res) => {
     // test that product ID is valid
     if(!mongood.isValidObjectId(req.params.id)) {
         return res.status(400).send('Invalid product ID!');
